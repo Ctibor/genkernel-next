@@ -213,6 +213,18 @@ _open_luks() {
                     gpg_ply_cmd="/usr/bin/gpg --logger-file /dev/null"
                     gpg_ply_cmd="${gpg_ply_cmd} --quiet --passphrase-fd 0 --batch --no-tty"
                     gpg_ply_cmd="${gpg_ply_cmd} --decrypt ${mntkey}${luks_key} | "
+				elif [ "$(echo ${luks_key} | grep -o '.tpm$')" = ".tpm" ] && \
+					[ -e /usr/sbin/tcsd ]; then
+					good_msg "Retrieving decryption key from TPM"
+					
+					# TODO(lxnay): WTF is this?
+                    [ -e /dev/tty ] && mv /dev/tty /dev/tty.org
+                    mknod /dev/tty c 5 1
+                    ifconfig lo up
+                    /usr/sbin/tcsd
+                    cryptsetup_opts="${cryptsetup_opts} -d -"
+                    gpg_ply_cmd="tpm_unsealdata -z --infile ${mntkey}${luks_key} | "
+                    gpg_tty_cmd="tpm_unsealdata -z --infile ${mntkey}${luks_key} | "
                 else
                     cryptsetup_opts="${cryptsetup_opts} -d ${mntkey}${luks_key}"
                     passphrase_needed="0" # keyfile not itself encrypted

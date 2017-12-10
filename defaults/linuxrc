@@ -215,7 +215,6 @@ for x in ${CMDLINE}; do
         crypt_swaps=*)
             CRYPT_SWAPS="${CRYPT_SWAPS} ${x#*=}"
         ;;
-
         root_key=*)
             CRYPT_ROOT_KEY=${x#*=}
         ;;

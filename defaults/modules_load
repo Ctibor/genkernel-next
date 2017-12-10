@@ -37,3 +37,6 @@ MODULES_VIRTIO="virtio virtio_balloon virtio_console virtio_net virtio_blk virti
 
 # Microsoft Hyper-V support
 MODULES_HYPERV="hv_storvsc hv_netvsc hyperv_fb"
+
+# Trusted platform module
+MODULES_TPM="tpm tpm_tis tpm_tis_core"

@@ -626,6 +626,72 @@ append_gpg() {
     rm -rf "${TEMP}/initramfs-gpg-temp" > /dev/null
 }
 
+append_tpm() {
+	if [ -d "${TEMP}/initramfs-tpm-temp" ]
+	then
+		rm -r "${TEMP}/initramfs-tpm-temp"
+	fi
+	tpm_files="
+		/etc/group
+		/etc/host.conf
+		/etc/hosts
+		/etc/nsswitch.conf
+		/etc/passwd
+		/etc/resolv.conf
+		/etc/tcsd.conf
+		/var/lib/tpm/system.data
+		"
+	tpm_binaries="
+		/lib64/ld-linux-x86-64.so.2
+		/lib64/libdl.so.2
+		/lib64/libnsl.so.1
+		/lib64/libnss_compat.so.2
+		/lib64/libnss_dns.so.2
+		/lib64/libnss_files.so.2
+		/lib64/libresolv.so.2
+		/lib64/libpthread.so.0
+		/lib64/libz.so.1
+		/lib64/libc.so.6
+		/usr/lib64/libcrypto.so.1.0.0
+		/usr/lib64/libssl.so.1.0.0
+		/usr/lib64/libgmp.so.10
+		/usr/lib64/libtpm_unseal.so.1.0.0
+		/usr/lib64/libtspi.so.1.2.0		
+		/sbin/nologin
+		/usr/sbin/tpm_selftest
+		/usr/sbin/tpm_setactive
+		/usr/sbin/tpm_setenable
+		/usr/sbin/tpm_takeownership
+		/usr/sbin/tpm_version
+		/usr/sbin/tcsd
+		/usr/bin/tpm_unsealdata
+		/usr/bin/tpm_sealdata
+		"
+		print_info 1 "Including TPM support"
+		for f in ${tpm_files}; do
+			mkdir -p "${TEMP}/initramfs-tpm-temp"/$(dirname "${f}") || \
+				gen_die "Cannot install tpm-tools"
+			cp -p "${f}" "${TEMP}/initramfs-tpm-temp/${f}"
+			if [ "${?}" != "0" ]
+			then
+               print_warning 1 "cannot copy ${f} from tpm"
+			fi
+		done
+		for b in ${tpm_binaries}; do
+			mkdir -p "${TEMP}/initramfs-tpm-temp"/$(dirname "${b}") || \
+				gen_die "Cannot install tpm-tools"
+		done
+		copy_binaries "${TEMP}/initramfs-tpm-temp" ${tpm_binaries}
+		cd "${TEMP}/initramfs-tpm-temp/"
+		mkdir -p var/lib/nscd
+		chown -R tss:tss etc/tcsd.conf var/lib/tpm var/lib/nscd
+		log_future_cpio_content
+		find . -print | cpio ${CPIO_ARGS} --append -F "${CPIO}" \
+            || gen_die "compressing tpm cpio"
+		cd "${TEMP}"
+		rm -rf "${TEMP}/initramfs-tpm-temp" > /dev/null
+}
+		
 append_udev() {
     if [ -d "${TEMP}/initramfs-udev-temp" ]
     then
@@ -1032,6 +1098,7 @@ create_initramfs() {
     append_data 'luks' "${LUKS}"
     append_data 'multipath' "${MULTIPATH}"
     append_data 'gpg' "${GPG}"
+    append_data 'tpm' "${TPM}"
 
     if [ "${RAMDISKMODULES}" = '1' ]
     then
